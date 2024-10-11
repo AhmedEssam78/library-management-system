@@ -1,12 +1,17 @@
 const express = require('express');
 const app = express();
 const bookRoutes = require('./routes/bookRoutes');
+const borrowerRoutes = require('./routes/borrowerRoutes');
+
 
 // Middleware to parse JSON
 app.use(express.json());
 
-// Use the book routes for any requests to /api/books
+// Connect Book routes
 app.use('/api', bookRoutes);
+// Connect Borrower routes
+app.use('/api', borrowerRoutes);
+
 
 // Default error handler
 app.use((err, req, res, next) => {
