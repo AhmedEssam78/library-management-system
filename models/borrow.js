@@ -12,8 +12,8 @@ module.exports = (sequelize, DataTypes) => {
     static associate(models) {
         // Many-to-One relationship with Books
         Borrow.belongsTo(models.Book, {
-          foreignKey: 'borrowedBook',
-          as: 'book'
+          foreignKey: 'book_id',
+          as: 'book_borrowed'
         });
 
         // Many-to-One relationship with Borrowers
@@ -30,7 +30,6 @@ module.exports = (sequelize, DataTypes) => {
     borrow_date: DataTypes.DATE,
     return_date: DataTypes.DATE,
     due_date: DataTypes.DATE,
-    is_returned: DataTypes.BOOLEAN
   }, {
     sequelize,
     modelName: 'Borrow',

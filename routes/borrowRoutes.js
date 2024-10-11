@@ -9,7 +9,7 @@ router.post('/borrows', borrowController.borrowBook);
 router.put('/returns/:borrow_id', borrowController.returnBook);
 
 // Route to list books borrowed by a borrower
-router.get('/borrows/:borrower_id', borrowController.listBorrowedBooks);
+router.get('/borrows/:borrower_id', borrowController.listBooksBorrowed);
 
 // Route to list overdue books
 router.get('/overdue', borrowController.listOverdueBooks);

@@ -4,7 +4,7 @@ const { Op } = require('sequelize');
 // Borrow a book
 exports.borrowBook = async (req, res) => {
   try {
-    const { borrower_id, book_id, due_date } = req.body;
+    const { borrower_id, book_id, due_date, borrow_date = new Date(), return_date = null } = req.body;
 
     // Find the book and borrower
     const book = await Book.findByPk(book_id);
@@ -19,8 +19,20 @@ exports.borrowBook = async (req, res) => {
       return res.status(400).json({ error: 'Book is not available' });
     }
 
+    // Validate dates
+    if (new Date(borrow_date) > new Date()) {
+      return res.status(400).json({ error: 'Borrow date cannot be in the future' });
+    }
+    
     // Borrow the book
-    const borrow = await Borrow.create({ borrower_id, book_id, due_date });
+    const borrow = await Borrow.create({
+      borrower_id,
+      book_id,
+      borrow_date,
+      return_date,
+      due_date
+    });
+
     await book.update({ available_quantity: book.available_quantity - 1 });
 
     res.status(201).json(borrow);
@@ -41,29 +53,40 @@ exports.returnBook = async (req, res) => {
       return res.status(404).json({ error: 'Borrow record not found' });
     }
 
+    // Check if the book has already been returned
+    if (borrow.return_date) {
+      return res.status(400).json({ error: 'This book has already been returned' });
+    }
+
     // Find the book and update its available quantity
     const book = await Book.findByPk(borrow.book_id);
     await book.update({ available_quantity: book.available_quantity + 1 });
 
-    // Delete the borrow record
-    await borrow.destroy();
-    res.status(204).send();
+    // Set the return date to the current date
+    const return_date = new Date();
+    await borrow.update({ return_date });
+
+    res.status(200).json({ message: 'Book returned successfully', borrow });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 };
 
+
 // List books borrowed by a borrower
-exports.listBorrowedBooks = async (req, res) => {
+exports.listBooksBorrowed = async (req, res) => {
   try {
-    const { borrower_id } = req.params;
+    const books_borrowed = await Borrow.findAll({
+        where: { borrower_id: req.params.borrower_id, 
+          return_date: null  // Only include books that haven't been returned yet
+        },
+        include: [
+          { model: Book, as: 'book_borrowed' },          // Use the correct alias 'book'
+          { model: Borrower, as: 'borrower' }   // Use the correct alias 'borrower'
+        ]
+      });
 
-    const borrowedBooks = await Borrow.findAll({
-      where: { borrower_id },
-      include: [{ model: Book, as: 'book' }]
-    });
-
-    res.status(200).json(borrowedBooks);
+    res.status(200).json(books_borrowed);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -72,34 +95,40 @@ exports.listBorrowedBooks = async (req, res) => {
 // List overdue books
 exports.listOverdueBooks = async (req, res) => {
     try {
-      const overdueBooks = await Borrow.findAll({
+      const Books_overdue = await Borrow.findAll({
         where: {
-          due_date: { [Op.lt]: new Date() } 
+          due_date: { [Op.lt]: new Date(),
+          return_date: null                   // Only include books that haven't been returned
+           } 
         },
         include: [
-          { model: Book, as: 'book' },      
+          { model: Book, as: 'book_borrowed' },      
           { model: Borrower, as: 'borrower' } 
         ]
       });
   
-      res.status(200).json(overdueBooks);
+      res.status(200).json(Books_overdue);
     } catch (error) {
       res.status(500).json({ error: error.message });
     }
   };
 
 
-//Extra: List all borrowing processes
+//Extra: List all active borrowing processes
 exports.listAllBorrows = async (req, res) => {
     try {
-      const borrows = await Borrow.findAll({
+      const borrowing_processes = await Borrow.findAll({
+        where: {
+          return_date: null  // Only include borrowing processes where the book has not been returned
+        },
+
         include: [
-          { model: Book, as: 'book' },       // Include associated books
+          { model: Book, as: 'book_borrowed' },       // Include associated books
           { model: Borrower, as: 'borrower' } // Include associated borrowers
         ]
       });
   
-      res.status(200).json(borrows);
+      res.status(200).json(borrowing_processes);
     } catch (error) {
       res.status(500).json({ error: error.message });
     }
