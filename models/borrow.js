@@ -12,7 +12,7 @@ module.exports = (sequelize, DataTypes) => {
     static associate(models) {
         // Many-to-One relationship with Books
         Borrow.belongsTo(models.Book, {
-          foreignKey: 'book_id',
+          foreignKey: 'borrowedBook',
           as: 'book'
         });
 
