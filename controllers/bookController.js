@@ -51,12 +51,12 @@ exports.deleteBook = async (req, res) => {
 // Search books by title, author, or ISBN
 exports.searchBooks = async (req, res) => {
   try {
-    const { title, author, isbn } = req.query;
+    const { title, author, ISBN } = req.query;
     const query = {};
 
     if (title) query.title = title;
     if (author) query.author = author;
-    if (isbn) query.isbn = isbn;
+    if (ISBN) query.ISBN = ISBN;
 
     const books = await Book.findAll({ where: query });
     res.status(200).json(books);
