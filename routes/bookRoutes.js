@@ -1,9 +1,10 @@
 const express = require('express');
 const router = express.Router();
 const bookController = require('../controllers/bookController');
+const limiter = require('../middlewares/rateLimiter');
 
 // Route to add a new book
-router.post('/books', bookController.addBook);
+router.post('/books', limiter, bookController.addBook);
 
 // Route to list all books
 router.get('/books', bookController.listBooks);
