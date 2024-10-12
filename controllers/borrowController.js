@@ -1,45 +1,59 @@
 const { Book, Borrower, Borrow } = require('../models');
+const { check, validationResult } = require('express-validator');
 const { Op } = require('sequelize');
 
 // Borrow a book
-exports.borrowBook = async (req, res) => {
-  try {
-    const { borrower_id, book_id, due_date, borrow_date = new Date(), return_date = null } = req.body;
+exports.borrowBook = [
+  // Validation rules
+  [
+    check('borrower_id').isInt().withMessage('Borrower ID must be an integer'),
+    check('book_id').isInt().withMessage('Book ID must be an integer'),
+    check('due_date').isISO8601().withMessage('Due date must be a valid date in ISO 8601 format'),
+  ],
 
-    // Find the book and borrower
-    const book = await Book.findByPk(book_id);
-    const borrower = await Borrower.findByPk(borrower_id);
+  async (req, res) => {
+    try {
+      const { borrower_id, book_id, due_date, borrow_date = new Date(), return_date = null } = req.body;
 
-    if (!book || !borrower) {
-      return res.status(404).json({ error: 'Book or Borrower not found' });
+      // Check if the book exists
+      const book = await Book.findByPk(book_id);
+      if (!book) {
+        return res.status(404).json({ error: 'Book not found' });
+      }
+
+      // Check if the borrower exists
+      const borrower = await Borrower.findByPk(borrower_id);
+      if (!borrower) {
+        return res.status(404).json({ error: 'Borrower not found' });
+      }
+
+      // Check if the book is available
+      if (book.available_quantity < 1) {
+        return res.status(400).json({ error: 'Book is not available' });
+      }
+
+      // Validate dates
+      if (new Date(borrow_date) > new Date()) {
+        return res.status(400).json({ error: 'Borrow date cannot be in the future' });
+      }
+      
+      // Borrow the book
+      const borrow = await Borrow.create({
+        borrower_id,
+        book_id,
+        borrow_date,
+        return_date,
+        due_date
+      });
+
+      await book.update({ available_quantity: book.available_quantity - 1 });
+
+      res.status(201).json(borrow);
+    } catch (error) {
+      res.status(500).json({ error: error.message });
     }
-
-    // Check if the book is available
-    if (book.available_quantity < 1) {
-      return res.status(400).json({ error: 'Book is not available' });
-    }
-
-    // Validate dates
-    if (new Date(borrow_date) > new Date()) {
-      return res.status(400).json({ error: 'Borrow date cannot be in the future' });
-    }
-    
-    // Borrow the book
-    const borrow = await Borrow.create({
-      borrower_id,
-      book_id,
-      borrow_date,
-      return_date,
-      due_date
-    });
-
-    await book.update({ available_quantity: book.available_quantity - 1 });
-
-    res.status(201).json(borrow);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
   }
-};
+];
 
 // Return a book
 exports.returnBook = async (req, res) => {
@@ -59,7 +73,12 @@ exports.returnBook = async (req, res) => {
     }
 
     // Find the book and update its available quantity
+    // Find the associated book and update the quantity
     const book = await Book.findByPk(borrow.book_id);
+    if (!book) {
+      return res.status(404).json({ error: 'Book not found' });
+    }    
+    
     await book.update({ available_quantity: book.available_quantity + 1 });
 
     // Set the return date to the current date
