@@ -4,6 +4,18 @@
 #### **Project Overview**:
 The **Library Management System** is a RESTful API built with Node.js and MySQL for managing books, borrowers, and the borrowing process in a library. It allows users to add books, register borrowers, and track borrowing activities. The system ensures basic authentication for certain endpoints and includes additional features like overdue book tracking and CSV export functionality. The project is fully containerized using Docker for easy deployment.
 
+#### **Technologies Used**:
+- **Node.js**: Server-side JavaScript runtime for building the application.
+- **Express.js**: Web framework for building the RESTful API.
+- **Sequelize**: ORM for connecting and interacting with MySQL.
+- **MySQL**: Relational database for storing books, borrowers, and borrowing records.
+- **Docker**: Containerization tool for easy deployment of the Node.js application and MySQL database.
+- **Express-Rate-Limit**: Middleware for implementing rate limiting on certain API endpoints.
+- **Basic-Auth**: Middleware for securing specific API routes with username/password authentication.
+- **Moment.js**: Library for handling dates, particularly for calculating due dates and exporting records from a specific time range.
+- **json2csv**: Library for exporting data to CSV format.
+- **Jest**: Testing framework for writing and running unit tests.
+
 #### **Key Features**:
 1. **Books Management**:
    - Add a book with details like title, author, ISBN, available quantity, and shelf location.
@@ -35,17 +47,6 @@ The **Library Management System** is a RESTful API built with Node.js and MySQL 
    - The entire application is containerized using Docker with a MySQL database running in a separate container.
    - Running the project with `docker-compose` automatically sets up the containers for the Node.js app and MySQL database.
 
-#### **Technologies Used**:
-- **Node.js**: Server-side JavaScript runtime for building the application.
-- **Express.js**: Web framework for building the RESTful API.
-- **Sequelize**: ORM for connecting and interacting with MySQL.
-- **MySQL**: Relational database for storing books, borrowers, and borrowing records.
-- **Docker**: Containerization tool for easy deployment of the Node.js application and MySQL database.
-- **Express-Rate-Limit**: Middleware for implementing rate limiting on certain API endpoints.
-- **Basic-Auth**: Middleware for securing specific API routes with username/password authentication.
-- **Moment.js**: Library for handling dates, particularly for calculating due dates and exporting records from a specific time range.
-- **json2csv**: Library for exporting data to CSV format.
-- **Jest**: Testing framework for writing and running unit tests.
 
 #### **Installation & Setup**:
 
