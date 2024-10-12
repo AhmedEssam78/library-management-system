@@ -1,6 +1,9 @@
 const { Book, Borrower, Borrow } = require('../models');
 const { check, validationResult } = require('express-validator');
 const { Op } = require('sequelize');
+const { Parser } = require('json2csv');
+const fs = require('fs');
+const moment = require('moment');
 
 // Borrow a book
 exports.borrowBook = [
@@ -152,3 +155,104 @@ exports.listAllBorrows = async (req, res) => {
       res.status(500).json({ error: error.message });
     }
   };
+
+
+
+// Bonus: Export borrowing processes starting from a specific date to CSV
+exports.exportAllBorrowsToCSV = async (req, res) => {
+  try {
+    // Get the 'fromDate' query parameter
+    const { fromDate } = req.query;
+
+    // If fromDate is not provided, default to one month ago
+    const startDate = fromDate ? moment(fromDate).toDate() : moment().subtract(1, 'months').toDate();
+
+    // Fetch borrowing processes starting from the specified date
+    const borrows = await Borrow.findAll({
+      where: {
+        borrow_date: { [Op.gte]: startDate }  // Only records where borrow_date is greater than or equal to the start date
+      },
+      include: [
+        { model: Book, as: 'book_borrowed' },
+        { model: Borrower, as: 'borrower' }
+      ]
+    });
+
+    // Log the fetched data
+    console.log(borrows); // <-- This will log the data in the console
+
+    if (borrows.length === 0) {
+      return res.status(404).json({ message: 'No borrowing records found.' });
+    }
+
+    // Prepare data for CSV
+    const borrowData = borrows.map(borrow => ({
+      borrower: borrow.borrower.name,
+      book: borrow.book_borrowed.title,
+      borrow_date: borrow.borrow_date,
+      due_date: borrow.due_date,
+      return_date: borrow.return_date || 'Not returned',
+    }));
+
+    // Log the mapped data
+    console.log(borrowData); // <-- Log the mapped data for CSV
+
+    // Convert JSON to CSV
+    const json2csvParser = new Parser();
+    const csv = json2csvParser.parse(borrowData);
+
+    // Write CSV to file
+    fs.writeFileSync('borrows.csv', csv);
+
+    // Send CSV file as response
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', 'attachment; filename=borrows.csv');
+    res.status(200).send(csv);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+
+// Bonus: Export overdue borrows of the last month to CSV
+exports.exportOverdueBorrowsToCSV = async (req, res) => {
+  try {
+    // Get the date of one month ago
+    const lastMonth = moment().subtract(1, 'months').toDate();
+
+    // Fetch overdue borrows from the last month
+    const overdueBorrows = await Borrow.findAll({
+      where: {
+        due_date: { [Op.lt]: new Date() }, // Past due date
+        return_date: null, // Not yet returned
+        borrow_date: { [Op.gte]: lastMonth } // Borrowed within the last month
+      },
+      include: [
+        { model: Book, as: 'book_borrowed' },
+        { model: Borrower, as: 'borrower' }
+      ]
+    });
+
+    // Prepare data for CSV
+    const overdueData = overdueBorrows.map(borrow => ({
+      borrower: borrow.borrower.name,
+      book: borrow.book_borrowed.title,
+      borrow_date: borrow.borrow_date,
+      due_date: borrow.due_date
+    }));
+
+    // Convert JSON to CSV
+    const json2csvParser = new Parser();
+    const csv = json2csvParser.parse(overdueData);
+
+    // Write CSV to file
+    fs.writeFileSync('overdue_borrows.csv', csv);
+
+    // Send CSV file as response
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', 'attachment; filename=overdue_borrows.csv');
+    res.status(200).send(csv);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};

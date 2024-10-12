@@ -14,8 +14,16 @@ router.get('/borrows/:borrower_id', borrowController.listBooksBorrowed);
 // Route to list overdue books
 router.get('/overdue', borrowController.listOverdueBooks);
 
-// Extra: to get all borrow processes
+// Extra: to get all active borrowing processes
 router.get('/borrows', borrowController.listAllBorrows);
+
+// Bonus: Export all borrowing processes to CSV in a specific period (Default: One Month)
+router.get('/export-csv', borrowController.exportAllBorrowsToCSV);
+
+// Bonus: Export overdue borrows of the last month to CSV
+router.get('/export-overdue-csv', borrowController.exportOverdueBorrowsToCSV);
+
+
 
 
 module.exports = router;
