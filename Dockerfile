@@ -16,5 +16,5 @@ COPY . .
 # Exposing the port your app runs on
 EXPOSE 3000
 
-# Commanding to start your app
-CMD ["npm", "start"]
+# Run migrations automatically and start the app
+CMD sh -c "npx sequelize-cli db:migrate && npm start"
