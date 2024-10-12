@@ -1,14 +1,31 @@
 const { Book } = require('../models');
+const { check, validationResult } = require('express-validator');
 
-// Add a new book
-exports.addBook = async (req, res) => {
-  try {
-    const book = await Book.create(req.body);
-    res.status(201).json(book);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
+
+// Add a new book with validation
+exports.addBook = [
+  // Validation middleware
+  [
+    check('title').notEmpty().withMessage('Title is required'),
+    check('author').notEmpty().withMessage('Author is required'),
+    check('ISBN').isISBN().withMessage('Invalid ISBN'),
+    check('available_quantity').isInt({ min: 1 }).withMessage('Available quantity must be a positive integer')
+  ],
+  async (req, res) => {
+    // Check for validation errors
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+
+    try {
+      const book = await Book.create(req.body);
+      res.status(201).json(book);
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
   }
-};
+];
 
 // List all books
 exports.listBooks = async (req, res) => {

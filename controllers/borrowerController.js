@@ -1,14 +1,31 @@
 const { Borrower } = require('../models');
+const { check, validationResult } = require('express-validator');
 
-// Add a new borrower
-exports.addBorrower = async (req, res) => {
-  try {
-    const borrower = await Borrower.create(req.body);
-    res.status(201).json(borrower);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
+
+// Register a new borrower with validation
+exports.addBorrower = [
+  // Validation middleware
+  [
+    check('name').notEmpty().withMessage('Name is required'),
+    check('email').isEmail().withMessage('Invalid email address'),
+    check('registered_date').isDate().withMessage('Registered date must be a valid date')
+  ],
+  async (req, res) => {
+    // Check for validation errors
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+
+    try {
+      const borrower = await Borrower.create(req.body);
+      res.status(201).json(borrower);
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
   }
-};
+];
+
 
 // List all borrowers
 exports.listBorrowers = async (req, res) => {
