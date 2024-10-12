@@ -178,9 +178,6 @@ exports.exportAllBorrowsToCSV = async (req, res) => {
       ]
     });
 
-    // Log the fetched data
-    console.log(borrows); // <-- This will log the data in the console
-
     if (borrows.length === 0) {
       return res.status(404).json({ message: 'No borrowing records found.' });
     }
@@ -193,9 +190,6 @@ exports.exportAllBorrowsToCSV = async (req, res) => {
       due_date: borrow.due_date,
       return_date: borrow.return_date || 'Not returned',
     }));
-
-    // Log the mapped data
-    console.log(borrowData); // <-- Log the mapped data for CSV
 
     // Convert JSON to CSV
     const json2csvParser = new Parser();
@@ -232,6 +226,12 @@ exports.exportOverdueBorrowsToCSV = async (req, res) => {
         { model: Borrower, as: 'borrower' }
       ]
     });
+
+
+    // Check if overdueBorrows is empty
+    if (!overdueBorrows || overdueBorrows.length === 0) {
+      return res.status(404).json({ error: 'No overdue borrows found for the last month' });
+    }
 
     // Prepare data for CSV
     const overdueData = overdueBorrows.map(borrow => ({
